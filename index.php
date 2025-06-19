@@ -8,6 +8,9 @@
   </head>
   <body>
     <header>
+      <?php
+      echo "Aujourd'hui, nous sommes le " . date ('d/m/Y') . "."
+      ?>
       <img src="Image/Vrai logo Serimax.png" alt="logo-SeriMax-1024x329" />
       <nav>
         <ul>
