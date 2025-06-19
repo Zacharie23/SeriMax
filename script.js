@@ -67,33 +67,54 @@ const data = [
 
 function afficheCatalogue(series) {
   const catalogue = document.getElementById("catalogue");
-  catalogue.innerHTML = ""; //vider le contenue
+  catalogue.innerHTML = "";
 
-  //Calculer l'index de début et de fin selon la page actuelle
   const debut = (pageActuelle - 1) * itemsParPage;
   const fin = debut + itemsParPage;
 
-  const pageItems = series.slice(debut, fin); // Découper le tableau pour ne garder que les items de la page actuelle
+  const pageItems = series.slice(debut, fin);
 
-  pageItems.forEach((contenue) => {
-    //Parcourir le tableau
-    const card = document.createElement("div"); // création des éléments pour l'affiche
+  pageItems.forEach((contenu) => {
+    const card = document.createElement("div");
     card.classList.add("serie-card");
-    const titre = document.createElement("h3");
-    const description = document.createElement("p");
-    const button = document.createElement("button");
 
-    titre.textContent = contenue.titre; //remplie les élements créés ci-dessus
-    description.textContent = contenue.description;
+    const image = document.createElement("img");
+    image.src =
+      contenu.Poster !== "N/A" ? contenu.Poster : "Image/no-image.png";
+    image.alt = contenu.Title;
+
+    const titre = document.createElement("h3");
+    titre.textContent = contenu.Title || contenu.titre;
+
+    const description = document.createElement("p");
+    description.textContent = contenu.Year
+      ? `Année : ${contenu.Year}`
+      : contenu.description || "";
+
+    const type = document.createElement("p");
+    type.textContent = contenu.Type ? `Type : ${contenu.Type}` : "";
+
+    const button = document.createElement("button");
     button.textContent = "Voir";
 
-    card.appendChild(titre); //Ajout des éléments à l'affiche
+    card.appendChild(image);
+    card.appendChild(titre);
     card.appendChild(description);
+    card.appendChild(type);
     card.appendChild(button);
 
     catalogue.appendChild(card);
 
-    button.addEventListener("click", () => ouvrirModal(contenue));
+    // Si l’élément vient de l’API, on a un imdbID
+    button.addEventListener("click", () => {
+      if (contenu.imdbID) {
+        fetch(`https://www.omdbapi.com/?apikey=47fd8d36&i=${contenu.imdbID}`)
+          .then((res) => res.json())
+          .then((details) => ouvrirModal(details));
+      } else {
+        ouvrirModal(contenu); // données locales (films ou séries en dur)
+      }
+    });
   });
 
   affichePagination(series.length);
@@ -146,20 +167,27 @@ function affichePagination(tailleTotale) {
   pagination.appendChild(btnNext);
 }
 
-function ouvrirModal(contenue) {
+function ouvrirModal(contenu) {
   const modal = document.getElementById("modal");
 
-  modal.innerHTML = `
-  <div class="modal-content">
-  <h2>${contenue.titre}</h2>
-  <p>${contenue.description}</p>
-  <button id="fermer">Fermer</button>
-  </div>
+  const html = `
+    <div class="modal-content">
+      <h2>${contenu.Title || contenu.titre}</h2>
+      <p><strong>Année :</strong> ${contenu.Year || ""}</p>
+      <p><strong>Durée :</strong> ${contenu.Runtime || "?"}</p>
+      <p><strong>Genre :</strong> ${contenu.Genre || "?"}</p>
+      <p><strong>Acteurs :</strong> ${contenu.Actors || "?"}</p>
+      <p><strong>Synopsis :</strong> ${
+        contenu.Plot || contenu.description || "Aucune description"
+      }</p>
+      <button id="fermer">Fermer</button>
+    </div>
   `;
 
-  modal.style.display = "block"; // afficher l modale
+  modal.innerHTML = html;
+  modal.style.display = "flex";
 
-  document.getElementById("fermer").addEventListener("click", fermerModal); // AJout du bouton fermer
+  document.getElementById("fermer").addEventListener("click", fermerModal);
 }
 
 function fermerModal() {
@@ -180,6 +208,9 @@ const champRecherche = document.getElementById("recherche");
 function filtrerCatalogue() {
   pageActuelle = 1;
   const texte = champRecherche.value.toLowerCase();
+  recherche = champRecherche.value.toLowerCase();
+
+  console.log(cleAPI);
   const resultatsFiltres = currentData.filter(function (item) {
     return item.titre.toLowerCase().includes(texte);
   });
@@ -193,14 +224,54 @@ function filtrerCatalogue() {
     afficheCatalogue(resultatsFiltres);
   }
 }
-champRecherche.addEventListener("input", filtrerCatalogue);
+champRecherche.addEventListener("input", () => {
+  pageActuelle = 1;
+  lancerRecherche(champRecherche.value);
+});
+
+function lancerRecherche(recherche) {
+  if (recherche.length < 3) return;
+
+  const type = document.getElementById("filtreType").value;
+  const annee = document.getElementById("filtreAnnee").value;
+
+  let url = `https://www.omdbapi.com/?apikey=47fd8d36&s=${recherche}&page=${pageActuelle}`;
+
+  if (type !== "all") {
+    url += `&type=${type}`;
+  }
+
+  if (annee) {
+    url += `&y=${annee}`;
+  }
+
+  fetch(url)
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.Response === "True") {
+        currentData = data.Search;
+        afficheCatalogue(currentData);
+      } else {
+        document.getElementById("catalogue").innerHTML =
+          "<p>Aucun résultat trouvé</p>";
+        document.getElementById("pagination").innerHTML = "";
+      }
+    })
+    .catch((err) => {
+      console.error("Erreur API :", err);
+    });
+}
 
 document.getElementById("Films").addEventListener("click", function (rech) {
   rech.preventDefault();
+  recherche = e;
   currentData = dataFilms;
   document.getElementById("catalogue").style.display = "block";
   afficheCatalogue(dataFilms);
 });
+
+let recherche = "";
+const cleAPI = `https://www.omdbapi.com/?apikey=47fd8d36&s&t=${recherche}`;
 
 const dataFilms = [
   {
@@ -259,4 +330,14 @@ document.getElementById("Accueil").addEventListener("click", function (rech) {
 
 window.addEventListener("DOMContentLoaded", function () {
   afficheAccueil();
+});
+
+document.getElementById("filtreType").addEventListener("change", () => {
+  pageActuelle = 1;
+  lancerRecherche(champRecherche.value);
+});
+
+document.getElementById("filtreAnnee").addEventListener("input", () => {
+  pageActuelle = 1;
+  lancerRecherche(champRecherche.value);
 });

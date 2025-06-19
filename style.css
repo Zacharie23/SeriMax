@@ -81,6 +81,32 @@ main {
     margin-bottom: 80px;
 }
 
+
+#filtres {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+#filtres select,
+#filtres input {
+    padding: 8px 12px;
+    border-radius: 20px;
+    border: none;
+    background-color: #3a1e5d;
+    color: #f4f4f4;
+    font-size: 14px;
+    width: 180px;
+}
+
+#filtres select:focus,
+#filtres input:focus {
+    outline: none;
+    background-color: #52307c;
+}
+
 #catalogue {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));

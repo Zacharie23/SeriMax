@@ -32,6 +32,22 @@
     </header>
 
     <main>
+      <div id="filtres">
+        <select id="filtreType">
+          <option value="all">Tous</option>
+          <option value="movie">Films</option>
+          <option value="series">Séries</option>
+        </select>
+
+        <input
+          type="number"
+          id="filtreAnnee"
+          placeholder="Année (ex: 2022)"
+          min="1900"
+          max="2099"
+        />
+      </div>
+
       <div id="catalogue"></div>
       <div id="pagination"></div>
       <div id="modal" class="modal"></div>
