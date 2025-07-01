@@ -170,6 +170,11 @@ function affichePagination(tailleTotale) {
 function ouvrirModal(contenu) {
   const modal = document.getElementById("modal");
 
+  let favoriBtnHTML = "";
+  if (contenu.imdbID) {
+    favoriBtnHTML = `<button id="favori-btn" data-imdbid="${contenu.imdbID}">Ajouter aux favoris</button>`;
+  }
+
   const html = `
     <div class="modal-content">
       <h2>${contenu.Title || contenu.titre}</h2>
@@ -177,15 +182,24 @@ function ouvrirModal(contenu) {
       <p><strong>Durée :</strong> ${contenu.Runtime || "?"}</p>
       <p><strong>Genre :</strong> ${contenu.Genre || "?"}</p>
       <p><strong>Acteurs :</strong> ${contenu.Actors || "?"}</p>
-      <p><strong>Synopsis :</strong> ${
-        contenu.Plot || contenu.description || "Aucune description"
-      }</p>
+      <p><strong>Synopsis :</strong> ${contenu.Plot || contenu.description || "Aucune description"}</p>
+      ${favoriBtnHTML}
       <button id="fermer">Fermer</button>
     </div>
   `;
 
   modal.innerHTML = html;
   modal.style.display = "flex";
+
+  // Contrôle affichage bouton favoris selon userIsLoggedIn
+  const favButton = document.getElementById("favori-btn");
+  if (favButton) {
+    if (userIsLoggedIn) {
+      favButton.style.display = "inline-block";
+    } else {
+      favButton.style.display = "none";
+    }
+  }
 
   document.getElementById("fermer").addEventListener("click", fermerModal);
 }
@@ -204,6 +218,7 @@ window.addEventListener("click", (e) => {
 });
 
 const champRecherche = document.getElementById("recherche");
+
 
 function filtrerCatalogue() {
   pageActuelle = 1;

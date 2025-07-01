@@ -46,6 +46,7 @@ CREATE TABLE Scenariste (
 
 CREATE TABLE Oeuvre (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    imdb_id TEXT UNIQUE,
     titre TEXT NOT NULL,
     annee INTEGER,
     duree TEXT,
