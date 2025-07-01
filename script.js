@@ -1,18 +1,12 @@
 let pageActuelle = 1;
 const itemsParPage = 10;
+let currentData = [];
+let recherche = "";
 
-document.getElementById("Series").addEventListener("click", function (rech) {
-  rech.preventDefault(); // empecher le rechargement de la page
-  currentData = data; // afficher seulement les series
-  document.getElementById("catalogue").style.display = "block";
-  afficheCatalogue(currentData);
-});
-
-//series présentent dans l'apllication
-const data = [
+const dataSeries = [
   {
     titre: "Prison Break",
-    description: "Un frère arrive ne prison pour sauver son frère",
+    description: "Un frère arrive en prison pour sauver son frère",
   },
   {
     titre: "Breaking Bad",
@@ -21,7 +15,7 @@ const data = [
   {
     titre: "Alice in Borderland",
     description:
-      "Arisu et ses amis se précipitent dans les toilettes publiques pour se cacher de la police. Lorsqu'ils en ressortent, les rues de tokyo sont vides ",
+      "Arisu et ses amis se précipitent dans les toilettes publiques pour se cacher de la police. Lorsqu'ils en ressortent, les rues de Tokyo sont vides.",
   },
   {
     titre: "Outer Banks",
@@ -34,9 +28,9 @@ const data = [
       "Mia est étudiante en médecine. Elle découvre l'utilisation de la technologie de pointe du bio-piratage au sein de son université. Lorsqu'une découverte révolutionnaire tombe entre de mauvaises mains, Mia doit décider de quel côté elle souhaite être.",
   },
   {
-    titre: "Stranger things",
+    titre: "Stranger Things",
     description:
-      "En 1983, à Hawkins dans l'Indiana, Will Byers disparaît de son domicile. Ses amis se lancent alors dans une recherche semée d'embûches pour le retrouver. Pendant leur quête de réponses, les garçons rencontrent une étrange jeune fille en fuite.",
+      "En 1983, à Hawkins dans l'Indiana, Will Byers disparaît de son domicile. Ses amis se lancent alors dans une recherche semée d'embûches pour le retrouver. Pendant leur quête, les garçons rencontrent une étrange jeune fille en fuite.",
   },
   {
     titre: "Scontrole Z",
@@ -44,75 +38,135 @@ const data = [
       "Après qu'un pirate informatique ait commencé à exposer les secrets des élèves du Collège national devant toute l'école, la distante et observatrice Sofia se lance dans la découverte de son identité.",
   },
   {
-    titre: "The I-land",
+    titre: "The I-Land",
     description:
       "Dix inconnus se réveillent sur une île déserte dangereuse sans aucun souvenir de qui ils sont ni comment ils sont arrivés, et découvrent bientôt sur l'île que tout n'est pas comme il semble.",
   },
   {
-    titre: "The walking dead",
+    titre: "The Walking Dead",
     description:
-      "Après une apocalypse ayant transformé la quasi-totalité de la population en zombies, un groupe d'hommes et de femmes mené par l'officier Rick Grimes tente de survivre. Ensemble, ils vont devoir tant bien que mal faire face à ce nouveau monde.",
+      "Après une apocalypse ayant transformé la quasi-totalité de la population en zombies, un groupe mené par Rick Grimes tente de survivre. Ensemble, ils vont devoir faire face à ce nouveau monde.",
   },
   {
-    titre: "manifest",
+    titre: "Manifest",
     description:
-      "Lorsque le vol Montego 828 atterrit à New-York, ses 191 passagers apprennent qu'ils viennent de faire un bond de 5 ans dans le futur, et que tous les croyaient morts ou perdus à jamais.",
+      "Lorsque le vol Montego 828 atterrit à New York, ses passagers apprennent qu'ils ont fait un bond de 5 ans dans le futur, et que tous les croyaient morts.",
   },
   {
     titre: "Narcos",
     description:
-      "Inspirée de l'histoire du célèbre narcotrafiquant de Medellín Pablo Escobar, cette série raconte la guerre sanglante des cartels en Colombie.",
+      "Inspirée de l'histoire du narcotrafiquant Pablo Escobar, cette série raconte la guerre sanglante des cartels en Colombie.",
   },
 ];
 
+const dataFilms = [
+  {
+    titre: "Ready Player One",
+    description:
+      "Dans un monde dévasté, un jeune gamer talentueux se lance dans une compétition planétaire. L'enjeu ? L'héritage d'un trésor et d'un immense univers de réalité virtuelle.",
+  },
+  {
+    titre: "Captain America",
+    description:
+      "Steve Rogers participe à un projet de recherche top secret qui le transforme en Captain America.",
+  },
+  {
+    titre: "Adam à travers le temps",
+    description:
+      "Après un atterrissage forcé en 2022, le pilote de chasse et voyageur dans le temps Adam Reed fait équipe avec une version de lui-même âgée de 12 ans pour sauver le futur.",
+  },
+  {
+    titre: "Passengers",
+    description:
+      "Alors que 5 000 passagers endormis voyagent vers une nouvelle planète, deux d'entre eux sont tirés de leur sommeil artificiel 90 ans trop tôt. Ils doivent maintenant affronter un danger pour tout le monde à bord.",
+  },
+  {
+    titre: "Iron Man",
+    description:
+      "L'homme d'affaires Tony Stark décide de défendre le monde sous le nom d'Iron Man.",
+  },
+  {
+    titre: "Oxygène",
+    description:
+      "Enfermée dans une unité cryogénique, Liz tente désespérément de se souvenir de son identité et de s'échapper avant d'être à court d'oxygène.",
+  },
+];
+
+// Initialisation de la page d'accueil avec mélange films + séries
+function afficheAccueil() {
+  const catalogue = document.getElementById("catalogue");
+  catalogue.style.display = "block";
+
+  // Mélange films + séries
+  const tousLesContenus = [...dataSeries, ...dataFilms];
+  tousLesContenus.sort(() => Math.random() - 0.5);
+
+  currentData = tousLesContenus;
+  pageActuelle = 1;
+  afficheCatalogue(tousLesContenus);
+}
+
+// Affiche le catalogue avec pagination
 function afficheCatalogue(series) {
   const catalogue = document.getElementById("catalogue");
   catalogue.innerHTML = "";
 
   const debut = (pageActuelle - 1) * itemsParPage;
   const fin = debut + itemsParPage;
-
   const pageItems = series.slice(debut, fin);
 
   pageItems.forEach((contenu) => {
     const card = document.createElement("div");
     card.classList.add("serie-card");
 
-    const image = document.createElement("img");
-    image.src =
-      contenu.Poster !== "N/A" ? contenu.Poster : "Image/no-image.png";
-    image.alt = contenu.Title;
-
     const titre = document.createElement("h3");
-    titre.textContent = contenu.Title || contenu.titre;
+    titre.textContent = contenu.titre || contenu.Title || "Titre inconnu";
 
     const description = document.createElement("p");
-    description.textContent = contenu.Year
-      ? `Année : ${contenu.Year}`
-      : contenu.description || "";
+    description.textContent = contenu.description || contenu.Plot || "Pas de description.";
 
-    const type = document.createElement("p");
-    type.textContent = contenu.Type ? `Type : ${contenu.Type}` : "";
+    // Bouton voir détails
+    const buttonVoir = document.createElement("button");
+    buttonVoir.textContent = "Voir";
 
-    const button = document.createElement("button");
-    button.textContent = "Voir";
+    // Bouton favori
+    const btnFavori = document.createElement("button");
+    btnFavori.classList.add("btn-favori");
 
-    card.appendChild(image);
+    // Ici, favorisUtilisateur doit être un tableau injecté côté PHP, sinon []
+    const estFavori = typeof favorisUtilisateur !== "undefined" && favorisUtilisateur.includes(contenu.imdbID || contenu.imdb_id || "");
+    btnFavori.textContent = estFavori ? "❤️" : "🤍";
+    btnFavori.dataset.imdbid = contenu.imdbID || contenu.imdb_id || "";
+
+    btnFavori.addEventListener("click", () => {
+      const imdbID = btnFavori.dataset.imdbid;
+      fetch("toggle_favori.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "imdbID=" + encodeURIComponent(imdbID),
+      })
+        .then((res) => res.text())
+        .then((response) => {
+          btnFavori.textContent = btnFavori.textContent === "🤍" ? "❤️" : "🤍";
+          alert(response);
+        })
+        .catch(console.error);
+    });
+
     card.appendChild(titre);
     card.appendChild(description);
-    card.appendChild(type);
-    card.appendChild(button);
+    card.appendChild(buttonVoir);
+    card.appendChild(btnFavori);
 
     catalogue.appendChild(card);
 
-    // Si l’élément vient de l’API, on a un imdbID
-    button.addEventListener("click", () => {
+    buttonVoir.addEventListener("click", () => {
       if (contenu.imdbID) {
         fetch(`https://www.omdbapi.com/?apikey=47fd8d36&i=${contenu.imdbID}`)
           .then((res) => res.json())
           .then((details) => ouvrirModal(details));
       } else {
-        ouvrirModal(contenu); // données locales (films ou séries en dur)
+        ouvrirModal(contenu);
       }
     });
   });
@@ -120,16 +174,16 @@ function afficheCatalogue(series) {
   affichePagination(series.length);
 }
 
+// Pagination
 function affichePagination(tailleTotale) {
   const pagination = document.getElementById("pagination");
-  pagination.innerHTML = ""; // vide les anciens boutons
+  pagination.innerHTML = "";
 
   const totalPages = Math.ceil(tailleTotale / itemsParPage);
 
-  // Bouton Précédent
   const btnPrev = document.createElement("button");
   btnPrev.textContent = "Précédent";
-  btnPrev.disabled = pageActuelle === 1; // désactivé si on est sur la 1ère page
+  btnPrev.disabled = pageActuelle === 1;
   btnPrev.addEventListener("click", () => {
     if (pageActuelle > 1) {
       pageActuelle--;
@@ -138,12 +192,11 @@ function affichePagination(tailleTotale) {
   });
   pagination.appendChild(btnPrev);
 
-  // Boutons numérotés
   for (let i = 1; i <= totalPages; i++) {
     const btn = document.createElement("button");
     btn.textContent = i;
     if (i === pageActuelle) {
-      btn.style.backgroundColor = "#a84dff"; // surbrillance page active
+      btn.style.backgroundColor = "#a84dff";
       btn.style.color = "#1a1026";
       btn.style.fontWeight = "bold";
     }
@@ -154,10 +207,9 @@ function affichePagination(tailleTotale) {
     pagination.appendChild(btn);
   }
 
-  // Bouton Suivant
   const btnNext = document.createElement("button");
   btnNext.textContent = "Suivant";
-  btnNext.disabled = pageActuelle === totalPages; // désactivé si dernière page
+  btnNext.disabled = pageActuelle === totalPages;
   btnNext.addEventListener("click", () => {
     if (pageActuelle < totalPages) {
       pageActuelle++;
@@ -167,15 +219,15 @@ function affichePagination(tailleTotale) {
   pagination.appendChild(btnNext);
 }
 
+// Modale détails
 function ouvrirModal(contenu) {
   const modal = document.getElementById("modal");
 
-  let favoriBtnHTML = "";
-  if (contenu.imdbID) {
-    favoriBtnHTML = `<button id="favori-btn" data-imdbid="${contenu.imdbID}">Ajouter aux favoris</button>`;
-  }
+  const favoriBtnHTML = contenu.imdbID
+    ? `<button id="favori-btn" data-imdbid="${contenu.imdbID}">Ajouter aux favoris</button>`
+    : "";
 
-  const html = `
+  modal.innerHTML = `
     <div class="modal-content">
       <h2>${contenu.Title || contenu.titre}</h2>
       <p><strong>Année :</strong> ${contenu.Year || ""}</p>
@@ -188,14 +240,23 @@ function ouvrirModal(contenu) {
     </div>
   `;
 
-  modal.innerHTML = html;
   modal.style.display = "flex";
 
-  // Contrôle affichage bouton favoris selon userIsLoggedIn
   const favButton = document.getElementById("favori-btn");
   if (favButton) {
-    if (userIsLoggedIn) {
+    if (typeof userIsLoggedIn !== "undefined" && userIsLoggedIn) {
       favButton.style.display = "inline-block";
+      favButton.addEventListener("click", () => {
+        const imdbID = favButton.dataset.imdbid;
+        fetch("ajouter_favori.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "imdbID=" + encodeURIComponent(imdbID),
+        })
+          .then((response) => response.text())
+          .then((resultat) => alert(resultat))
+          .catch((error) => console.error("Erreur :", error));
+      });
     } else {
       favButton.style.display = "none";
     }
@@ -210,6 +271,7 @@ function fermerModal() {
   modal.innerHTML = "";
 }
 
+// Ferme modale si clic hors contenu
 window.addEventListener("click", (e) => {
   const modal = document.getElementById("modal");
   if (e.target === modal) {
@@ -217,45 +279,25 @@ window.addEventListener("click", (e) => {
   }
 });
 
+// Recherche dans catalogue local (films ou séries)
 const champRecherche = document.getElementById("recherche");
 
-
-function filtrerCatalogue() {
-  pageActuelle = 1;
-  const texte = champRecherche.value.toLowerCase();
-  recherche = champRecherche.value.toLowerCase();
-
-  console.log(cleAPI);
-  const resultatsFiltres = currentData.filter(function (item) {
-    return item.titre.toLowerCase().includes(texte);
-  });
-
-  currentData = resultatsFiltres;
-
-  if (resultatsFiltres.length === 0) {
-    document.getElementById("catalogue").innerHTML =
-      "<p>Aucun résultat trouvé</p>";
-  } else {
-    afficheCatalogue(resultatsFiltres);
-  }
-}
 champRecherche.addEventListener("input", () => {
   pageActuelle = 1;
   lancerRecherche(champRecherche.value);
 });
 
-function lancerRecherche(recherche) {
-  if (recherche.length < 3) return;
+function lancerRecherche(texteRecherche) {
+  if (texteRecherche.length < 3) return;
 
   const type = document.getElementById("filtreType").value;
   const annee = document.getElementById("filtreAnnee").value;
 
-  let url = `https://www.omdbapi.com/?apikey=47fd8d36&s=${recherche}&page=${pageActuelle}`;
+  let url = `https://www.omdbapi.com/?apikey=47fd8d36&s=${encodeURIComponent(texteRecherche)}&page=${pageActuelle}`;
 
   if (type !== "all") {
     url += `&type=${type}`;
   }
-
   if (annee) {
     url += `&y=${annee}`;
   }
@@ -267,92 +309,35 @@ function lancerRecherche(recherche) {
         currentData = data.Search;
         afficheCatalogue(currentData);
       } else {
-        document.getElementById("catalogue").innerHTML =
-          "<p>Aucun résultat trouvé</p>";
+        document.getElementById("catalogue").innerHTML = "<p>Aucun résultat trouvé</p>";
         document.getElementById("pagination").innerHTML = "";
       }
     })
-    .catch((err) => {
-      console.error("Erreur API :", err);
-    });
+    .catch((err) => console.error("Erreur API :", err));
 }
 
-document.getElementById("Films").addEventListener("click", function (rech) {
-  rech.preventDefault();
-  recherche = e;
-  currentData = dataFilms;
-  document.getElementById("catalogue").style.display = "block";
-  afficheCatalogue(dataFilms);
-});
-
-let recherche = "";
-const cleAPI = `https://www.omdbapi.com/?apikey=47fd8d36&s&t=${recherche}`;
-
-const dataFilms = [
-  {
-    titre: "Ready Player One",
-    description:
-      "Dans un monde dévasté, un jeune gamer talentueux se lance dans une compétition planétaire. L'enjeu ? L'héritage d'un trésor et d'un immense univers de réalité virtuelle  ",
-  },
-  {
-    titre: "Captain America",
-    description:
-      "Steve Rogers participe à un projet de recherche top secret qui le transforme en Captaine America",
-  },
-  {
-    titre: "Adam à travers le temps",
-    description:
-      "Après un atterissage forcé en 2022, le pilote de chasse et voyageur dans le temps Adam Reed fait équipe avec une version de lui-meme agée de 12 ans pour sauver le futur",
-  },
-  {
-    titre: "Passengers",
-    description:
-      "Alors que 5.000 passagers endormis pour longtemps voyagent dans l'espace vers une nouvelle planète, deux d'entre eux sont accidentellement tirés de leur sommeil artificiel 90 ans trop tôt. Jim et Aurora doivent désormais accepter l'idée de passer le reste de leur existence à bord du vaisseau spatial. Alors qu'ils éprouvent peu à peu une indéniable attirance, ils découvrent que le vaisseau court un grave danger. La vie des milliers de passagers endormis est entre leurs mains.",
-  },
-  {
-    titre: "Iron Man",
-    description:
-      "L'homme d'affaires Tony Stark décide de défendre le monde sous le nom de Iron Man",
-  },
-  {
-    titre: "Oxygène",
-    description:
-      "Enfermée dans une unité cryogénique, Liz tente désesperément de se souvenir de son identité et de s'échapper avant d'étre à court d'oxygène",
-  },
-];
-
-let currentData = data;
-
-function afficheAccueil() {
-  const catalogue = document.getElementById("catalogue");
-  catalogue.style.display = "block";
-
-  const tousLesContenus = [...data, ...dataFilms]; //mélanger series + films sur la page d'accueil
-
-  tousLesContenus.sort(() => Math.random() - 0.5);
-
-  currentData = tousLesContenus;
-  afficheCatalogue(tousLesContenus);
-}
-
-document.getElementById("Accueil").addEventListener("click", function (rech) {
-  rech.preventDefault();
-  document.getElementById("modal").style.display = "none"; // Cache la modale si elle est ouverte
+// Gestion des clics menu
+document.getElementById("Accueil").addEventListener("click", (e) => {
+  e.preventDefault();
+  document.getElementById("modal").style.display = "none";
   document.getElementById("modal").innerHTML = "";
   champRecherche.value = "";
   afficheAccueil();
 });
 
-window.addEventListener("DOMContentLoaded", function () {
-  afficheAccueil();
+document.getElementById("Series").addEventListener("click", (e) => {
+  e.preventDefault();
+  currentData = dataSeries;
+  pageActuelle = 1;
+  afficheCatalogue(dataSeries);
 });
 
-document.getElementById("filtreType").addEventListener("change", () => {
+document.getElementById("Films").addEventListener("click", (e) => {
+  e.preventDefault();
+  currentData = dataFilms;
   pageActuelle = 1;
-  lancerRecherche(champRecherche.value);
+  afficheCatalogue(dataFilms);
 });
 
-document.getElementById("filtreAnnee").addEventListener("input", () => {
-  pageActuelle = 1;
-  lancerRecherche(champRecherche.value);
-});
+// Initialisation
+afficheAccueil();
