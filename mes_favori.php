@@ -26,20 +26,36 @@ try {
 
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8" />
     <title>Mes Favoris</title>
 </head>
+
 <body>
     <h1>Mes Favoris</h1>
-    <?php if (empty($favoris)): ?>
-        <p>Vous n'avez pas encore de favoris.</p>
-    <?php else: ?>
+    <?php if (!empty($favoris)): ?>
         <ul>
             <?php foreach ($favoris as $media_id): ?>
-                <li>Média ID: <?= htmlspecialchars($media_id) ?></li>
+                <?php
+                $json = file_get_contents("https://www.omdbapi.com/?apikey=47fd8d36&i=" . urlencode($media_id));
+                $data = json_decode($json, true);
+                $titre = $data['Title'] ?? 'Titre inconnu';
+                $poster = $data['Poster'] ?? '';
+                ?>
+                <li>
+                    <strong><?= htmlspecialchars($titre) ?></strong>
+                    (<?= htmlspecialchars($media_id) ?>)
+                    <?php if ($poster && $poster != 'N/A'): ?>
+                        <br><img src="<?= htmlspecialchars($poster) ?>" alt="Affiche" style="height:100px;">
+                    <?php endif; ?>
+                </li>
             <?php endforeach; ?>
         </ul>
+    <?php else: ?>
+        <p>Vous n'avez pas encore de favoris.</p>
     <?php endif; ?>
+
 </body>
+
 </html>

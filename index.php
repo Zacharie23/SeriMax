@@ -47,6 +47,7 @@ if ($utilisateur_id) {
         <li><a href="#" id="Accueil">Accueil</a></li>
         <li><a href="#" id="Series">Séries</a></li>
         <li><a href="#" id="Films">Films</a></li>
+        <li><a href="#" id="onglet-favoris" style="display:none;">Mes favoris</a></li>
         <li><a href="register.php" id="MonCompte">Mon Compte</a></li>
       </ul>
 
@@ -95,10 +96,6 @@ if ($utilisateur_id) {
 
   <script src="script.js"></script>
 
-  <script>
-    const favorisUtilisateur = <?php echo json_encode($favoris); ?> || [];
-    const userIsLoggedIn = <?php echo json_encode($isLoggedIn); ?> || false;
-  </script>
 
 </body>
 

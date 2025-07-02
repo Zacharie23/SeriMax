@@ -92,6 +92,22 @@ const dataFilms = [
   },
 ];
 
+// Vérifie si un titre est déjà en favoris
+// ... (ta déclaration des variables, dataSeries, dataFilms restent identiques)
+
+// Vérifie si un titre est déjà en favoris
+async function estFavori(imdbId) {
+  try {
+    const r = await fetch(
+      "check_favori.php?imdb_id=" + encodeURIComponent(imdbId)
+    );
+    const json = await r.json();
+    return json.estFavori === true;
+  } catch {
+    return false;
+  }
+}
+
 // Initialisation de la page d'accueil avec mélange films + séries
 function afficheAccueil() {
   const catalogue = document.getElementById("catalogue");
@@ -123,7 +139,8 @@ function afficheCatalogue(series) {
     titre.textContent = contenu.titre || contenu.Title || "Titre inconnu";
 
     const description = document.createElement("p");
-    description.textContent = contenu.description || contenu.Plot || "Pas de description.";
+    description.textContent =
+      contenu.description || contenu.Plot || "Pas de description.";
 
     // Bouton voir détails
     const buttonVoir = document.createElement("button");
@@ -133,22 +150,33 @@ function afficheCatalogue(series) {
     const btnFavori = document.createElement("button");
     btnFavori.classList.add("btn-favori");
 
-    // Ici, favorisUtilisateur doit être un tableau injecté côté PHP, sinon []
-    const estFavori = typeof favorisUtilisateur !== "undefined" && favorisUtilisateur.includes(contenu.imdbID || contenu.imdb_id || "");
-    btnFavori.textContent = estFavori ? "❤️" : "🤍";
-    btnFavori.dataset.imdbid = contenu.imdbID || contenu.imdb_id || "";
+    // Utilise imdb_id ou imdbID (normalisé en imdb_id)
+    const imdb_id = contenu.imdb_id || contenu.imdbID || "";
+
+    // Favori selon liste injectée (si existante)
+    const estFavoriLocal =
+      typeof favorisUtilisateur !== "undefined" &&
+      favorisUtilisateur.includes(imdb_id);
+    btnFavori.textContent = estFavoriLocal ? "❤️" : "🤍";
+    btnFavori.dataset.imdbid = imdb_id;
 
     btnFavori.addEventListener("click", () => {
-      const imdbID = btnFavori.dataset.imdbid;
+      const params = new URLSearchParams();
+      params.append("imdb_id", imdb_id);
+      params.append("titre", contenu.titre || contenu.Title || "");
+      params.append("annee", contenu.annee || contenu.Year || "");
+      params.append("type", contenu.type || contenu.Type || "");
+      params.append("affiche", contenu.affiche || contenu.Poster || "");
+
       fetch("toggle_favori.php", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: "imdbID=" + encodeURIComponent(imdbID),
+        body: params.toString(),
       })
-        .then((res) => res.text())
+        .then((res) => res.json())
         .then((response) => {
-          btnFavori.textContent = btnFavori.textContent === "🤍" ? "❤️" : "🤍";
-          alert(response);
+          btnFavori.textContent = response.action === "ajouté" ? "❤️" : "🤍";
+          alert(response.message);
         })
         .catch(console.error);
     });
@@ -173,6 +201,75 @@ function afficheCatalogue(series) {
 
   affichePagination(series.length);
 }
+
+// Pagination, modale, recherche, menu restent inchangés
+
+// Modale détails
+async function ouvrirModal(contenu) {
+  const modal = document.getElementById("modal");
+
+  const isFav = contenu.imdbID ? await estFavori(contenu.imdbID) : false;
+  const favoriBtnHTML = contenu.imdbID
+    ? `<button id="favori-btn" data-imdbid="${contenu.imdbID}">
+         ${isFav ? "Retirer des favoris" : "Ajouter aux favoris"}
+       </button>`
+    : "";
+
+  modal.innerHTML = `
+    <div class="modal-content">
+      <h2>${contenu.Title || contenu.titre}</h2>
+      <p><strong>Année :</strong> ${contenu.Year || ""}</p>
+      <p><strong>Durée :</strong> ${contenu.Runtime || "?"}</p>
+      <p><strong>Genre :</strong> ${contenu.Genre || "?"}</p>
+      <p><strong>Acteurs :</strong> ${contenu.Actors || "?"}</p>
+      <p><strong>Synopsis :</strong> ${
+        contenu.Plot || contenu.description || "Aucune description"
+      }</p>
+      ${favoriBtnHTML}
+      <button id="fermer">Fermer</button>
+    </div>
+  `;
+
+  modal.style.display = "flex";
+
+  const favButton = document.getElementById("favori-btn");
+  if (favButton) {
+    if (typeof userIsLoggedIn !== "undefined" && userIsLoggedIn) {
+      favButton.style.display = "inline-block";
+
+      favButton.addEventListener("click", async () => {
+        const imdbID = favButton.dataset.imdbid;
+        const fd = new FormData();
+        fd.append("imdb_id", imdbID);
+        fd.append("titre", contenu.Title || contenu.titre);
+        fd.append("annee", contenu.Year || "");
+        fd.append("type", contenu.Type || contenu.type || "");
+        fd.append("affiche", contenu.Poster || contenu.affiche || "");
+
+        try {
+          const res = await fetch("toggle_favori.php", {
+            method: "POST",
+            body: fd,
+          });
+          const result = await res.json();
+          favButton.textContent =
+            result.action === "ajouté"
+              ? "Retirer des favoris"
+              : "Ajouter aux favoris";
+        } catch (e) {
+          console.error(e);
+          alert("Erreur lors de la mise à jour des favoris");
+        }
+      });
+    } else {
+      favButton.style.display = "none";
+    }
+  }
+
+  document.getElementById("fermer").addEventListener("click", fermerModal);
+}
+
+// ... (le reste du script reste identique)
 
 // Pagination
 function affichePagination(tailleTotale) {
@@ -220,11 +317,14 @@ function affichePagination(tailleTotale) {
 }
 
 // Modale détails
-function ouvrirModal(contenu) {
+async function ouvrirModal(contenu) {
   const modal = document.getElementById("modal");
 
+  const isFav = contenu.imdbID ? await estFavori(contenu.imdbID) : false;
   const favoriBtnHTML = contenu.imdbID
-    ? `<button id="favori-btn" data-imdbid="${contenu.imdbID}">Ajouter aux favoris</button>`
+    ? `<button id="favori-btn" data-imdbid="${contenu.imdbID}">
+         ${isFav ? "Retirer des favoris" : "Ajouter aux favoris"}
+       </button>`
     : "";
 
   modal.innerHTML = `
@@ -234,7 +334,9 @@ function ouvrirModal(contenu) {
       <p><strong>Durée :</strong> ${contenu.Runtime || "?"}</p>
       <p><strong>Genre :</strong> ${contenu.Genre || "?"}</p>
       <p><strong>Acteurs :</strong> ${contenu.Actors || "?"}</p>
-      <p><strong>Synopsis :</strong> ${contenu.Plot || contenu.description || "Aucune description"}</p>
+      <p><strong>Synopsis :</strong> ${
+        contenu.Plot || contenu.description || "Aucune description"
+      }</p>
       ${favoriBtnHTML}
       <button id="fermer">Fermer</button>
     </div>
@@ -246,16 +348,24 @@ function ouvrirModal(contenu) {
   if (favButton) {
     if (typeof userIsLoggedIn !== "undefined" && userIsLoggedIn) {
       favButton.style.display = "inline-block";
-      favButton.addEventListener("click", () => {
+      favButton.addEventListener("click", async () => {
         const imdbID = favButton.dataset.imdbid;
-        fetch("ajouter_favori.php", {
+        const fd = new FormData();
+        fd.append("imdb_id", imdbID);
+        fd.append("titre", contenu.Title || contenu.titre);
+        fd.append("annee", contenu.Year || "");
+        fd.append("type", contenu.Type || contenu.type || "");
+        fd.append("affiche", contenu.Poster || contenu.affiche || "");
+
+        const res = await fetch("toggle_favori.php", {
           method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: "imdbID=" + encodeURIComponent(imdbID),
-        })
-          .then((response) => response.text())
-          .then((resultat) => alert(resultat))
-          .catch((error) => console.error("Erreur :", error));
+          body: fd,
+        });
+        const result = await res.json();
+        favButton.textContent =
+          result.action === "ajouté"
+            ? "Retirer des favoris"
+            : "Ajouter aux favoris";
       });
     } else {
       favButton.style.display = "none";
@@ -271,7 +381,7 @@ function fermerModal() {
   modal.innerHTML = "";
 }
 
-// Ferme modale si clic hors contenu
+// Ferme modale si clic dehors
 window.addEventListener("click", (e) => {
   const modal = document.getElementById("modal");
   if (e.target === modal) {
@@ -293,7 +403,9 @@ function lancerRecherche(texteRecherche) {
   const type = document.getElementById("filtreType").value;
   const annee = document.getElementById("filtreAnnee").value;
 
-  let url = `https://www.omdbapi.com/?apikey=47fd8d36&s=${encodeURIComponent(texteRecherche)}&page=${pageActuelle}`;
+  let url = `https://www.omdbapi.com/?apikey=47fd8d36&s=${encodeURIComponent(
+    texteRecherche
+  )}&page=${pageActuelle}`;
 
   if (type !== "all") {
     url += `&type=${type}`;
@@ -309,7 +421,8 @@ function lancerRecherche(texteRecherche) {
         currentData = data.Search;
         afficheCatalogue(currentData);
       } else {
-        document.getElementById("catalogue").innerHTML = "<p>Aucun résultat trouvé</p>";
+        document.getElementById("catalogue").innerHTML =
+          "<p>Aucun résultat trouvé</p>";
         document.getElementById("pagination").innerHTML = "";
       }
     })
@@ -338,6 +451,90 @@ document.getElementById("Films").addEventListener("click", (e) => {
   pageActuelle = 1;
   afficheCatalogue(dataFilms);
 });
+// Afficher l'onglet "Mes favoris" si utilisateur connecté
+if (typeof userIsLoggedIn !== "undefined" && userIsLoggedIn) {
+  document.getElementById("onglet-favoris").style.display = "inline-block";
+} else {
+  document.getElementById("onglet-favoris").style.display = "none";
+}
+
+// Gestion clic sur "Mes favoris"
+document
+  .getElementById("onglet-favoris")
+  .addEventListener("click", afficherFavorisUtilisateur);
+
+async function afficherFavorisUtilisateur(e) {
+  e.preventDefault();
+
+  // Cacher catalogue, modal, etc.
+  document.getElementById("catalogue").style.display = "none";
+  document.getElementById("pagination").style.display = "none";
+  document.getElementById("modal").style.display = "none";
+
+  // Création / affichage div favoris
+  let divFavoris = document.getElementById("mes-favoris");
+  if (!divFavoris) {
+    divFavoris = document.createElement("div");
+    divFavoris.id = "mes-favoris";
+    divFavoris.style.padding = "10px";
+    document.body.appendChild(divFavoris);
+  }
+  divFavoris.style.display = "block";
+  divFavoris.innerHTML = "<h2>Mes favoris</h2><p>Chargement...</p>";
+
+  try {
+    const response = await fetch("get_favoris.php");
+    const favoris = await response.json();
+
+    if (!favoris.length) {
+      divFavoris.innerHTML = "<p>Vous n'avez pas encore de favoris.</p>";
+      return;
+    }
+
+    divFavoris.innerHTML = "";
+
+    favoris.forEach((fav) => {
+      const card = document.createElement("div");
+      card.classList.add("serie-card");
+      card.style.marginBottom = "10px";
+      card.innerHTML = `
+        <h3>${fav.titre}</h3>
+        <p>${fav.annee || ""} - ${fav.type || ""}</p>
+        <button class="btn-voir" data-imdbid="${fav.imdb_id}">Voir</button>
+        <button class="btn-suppr" data-oeuvreid="${
+          fav.oeuvre_id
+        }">Supprimer</button>
+      `;
+      divFavoris.appendChild(card);
+
+      card.querySelector(".btn-voir").addEventListener("click", () => {
+        fetch(`https://www.omdbapi.com/?apikey=47fd8d36&i=${fav.imdb_id}`)
+          .then((res) => res.json())
+          .then((details) => ouvrirModal(details));
+      });
+
+      card.querySelector(".btn-suppr").addEventListener("click", async () => {
+        if (confirm(`Supprimer "${fav.titre}" de vos favoris ?`)) {
+          const res = await fetch("supprimer_favori.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: `oeuvre_id=${fav.oeuvre_id}`,
+          });
+          const result = await res.json();
+          if (result.success) {
+            alert("Favori supprimé");
+            card.remove();
+          } else {
+            alert("Erreur lors de la suppression");
+          }
+        }
+      });
+    });
+  } catch (e) {
+    divFavoris.innerHTML = "<p>Erreur lors du chargement des favoris.</p>";
+    console.error(e);
+  }
+}
 
 // Initialisation
 afficheAccueil();

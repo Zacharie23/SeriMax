@@ -1,46 +1,53 @@
 <?php
 session_start();
-require_once 'database.php';
+header('Content-Type: application/json');
 
-// Vérifier que l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Utilisateur non connecté']);
+    echo json_encode(['success' => false, 'message' => 'Vous devez être connecté']);
     exit;
 }
 
-$user_id = $_SESSION['user_id'];
-// Récupérer l'id du film/série (exemple via POST)
-$media_id = isset($_POST['media_id']) ? intval($_POST['media_id']) : 0;
+$userId = $_SESSION['user_id'];
+$imdbId = $_POST['imdb_id'] ?? '';
+$titre = $_POST['titre'] ?? '';
+$annee = $_POST['annee'] ?? '';
+$type = $_POST['type'] ?? '';
+$affiche = $_POST['affiche'] ?? '';
 
-if ($media_id <= 0) {
-    http_response_code(400);
-    echo json_encode(['error' => 'ID média invalide']);
+if (!$imdbId || !$titre) {
+    echo json_encode(['success' => false, 'message' => 'Données incomplètes']);
     exit;
 }
 
-try {
-    // Vérifier si le favori existe déjà
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM favoris WHERE user_id = ? AND media_id = ?");
-    $stmt->execute([$user_id, $media_id]);
-    $exists = $stmt->fetchColumn();
+require 'database.php';      // $db
 
-    if ($exists) {
-        // Supprimer le favori
-        $stmt = $pdo->prepare("DELETE FROM favoris WHERE user_id = ? AND media_id = ?");
-        $stmt->execute([$user_id, $media_id]);
-        $action = 'removed';
-    } else {
-        // Ajouter le favori
-        $stmt = $pdo->prepare("INSERT INTO favoris (user_id, media_id) VALUES (?, ?)");
-        $stmt->execute([$user_id, $media_id]);
-        $action = 'added';
-    }
+/* 1. Insère l’œuvre si absente */
+$stmt = $db->prepare("SELECT id FROM Oeuvre WHERE imdb_id = ?");
+$stmt->execute([$imdbId]);
+$oeuvre = (int)$stmt->fetch(PDO::FETCH_COLUMN);
 
-    echo json_encode(['success' => true, 'action' => $action]);
+if (!$oeuvre) {
+    $ins = $db->prepare("
+        INSERT INTO Oeuvre (imdb_id,titre,annee,type,affiche)
+        VALUES (?,?,?,?,?)");
+    $ins->execute([$imdbId, $titre, $annee, $type, $affiche]);
+    $oeuvre = (int)$db->lastInsertId();
+}
 
-} catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Erreur serveur']);
+/* 2. Ajoute ou retire des favoris */
+$stmt = $db->prepare("SELECT 1 FROM Favori WHERE utilisateur_id=? AND oeuvre_id=?");
+$stmt->execute([$userId, $oeuvre]);
+$estFavori = (bool) $stmt->fetchColumn();
+
+if ($estFavori) {
+    $db->prepare("DELETE FROM Favori WHERE utilisateur_id=? AND oeuvre_id=?")
+        ->execute([$userId, $oeuvre]);
+    echo json_encode(['success' => true, 'action' => 'supprimé', 'message' => 'Retiré des favoris']);
+    exit;
+} else {
+    $db->prepare("INSERT INTO Favori(utilisateur_id,oeuvre_id) VALUES (?,?)")
+        ->execute([$userId, $oeuvre]);
+    echo json_encode(['success' => true, 'action' => 'ajouté', 'message' => 'Ajouté aux favoris']);
+    exit;
 }
 ?>
