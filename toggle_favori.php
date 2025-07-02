@@ -24,14 +24,15 @@ require 'database.php';      // $db
 /* 1. Insère l’œuvre si absente */
 $stmt = $db->prepare("SELECT id FROM Oeuvre WHERE imdb_id = ?");
 $stmt->execute([$imdbId]);
-$oeuvre = (int)$stmt->fetch(PDO::FETCH_COLUMN);
+$oeuvre = (int) $stmt->fetch(PDO::FETCH_COLUMN);
 
 if (!$oeuvre) {
+    var_dump($type);
     $ins = $db->prepare("
         INSERT INTO Oeuvre (imdb_id,titre,annee,type,affiche)
         VALUES (?,?,?,?,?)");
     $ins->execute([$imdbId, $titre, $annee, $type, $affiche]);
-    $oeuvre = (int)$db->lastInsertId();
+    $oeuvre = (int) $db->lastInsertId();
 }
 
 /* 2. Ajoute ou retire des favoris */

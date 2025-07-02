@@ -165,8 +165,11 @@ function afficheCatalogue(series) {
       params.append("imdb_id", imdb_id);
       params.append("titre", contenu.titre || contenu.Title || "");
       params.append("annee", contenu.annee || contenu.Year || "");
-      params.append("type", contenu.type || contenu.Type || "");
       params.append("affiche", contenu.affiche || contenu.Poster || "");
+      let typeValue = (contenu.type || contenu.Type || "").toLowerCase();
+      if (typeValue === "movie") typeValue = "film";
+      else if (typeValue === "series") typeValue = "serie";
+      params.append("type", typeValue);
 
       fetch("toggle_favori.php", {
         method: "POST",
@@ -243,8 +246,11 @@ async function ouvrirModal(contenu) {
         fd.append("imdb_id", imdbID);
         fd.append("titre", contenu.Title || contenu.titre);
         fd.append("annee", contenu.Year || "");
-        fd.append("type", contenu.Type || contenu.type || "");
         fd.append("affiche", contenu.Poster || contenu.affiche || "");
+        let typeValue = (contenu.Type || contenu.type || "").toLowerCase();
+        if (typeValue === "movie") typeValue = "film";
+        else if (typeValue === "series") typeValue = "serie";
+        fd.append("type", typeValue);
 
         try {
           const res = await fetch("toggle_favori.php", {
@@ -268,8 +274,6 @@ async function ouvrirModal(contenu) {
 
   document.getElementById("fermer").addEventListener("click", fermerModal);
 }
-
-// ... (le reste du script reste identique)
 
 // Pagination
 function affichePagination(tailleTotale) {
@@ -483,7 +487,7 @@ async function afficherFavorisUtilisateur(e) {
   divFavoris.innerHTML = "<h2>Mes favoris</h2><p>Chargement...</p>";
 
   try {
-    const response = await fetch("get_favoris.php");
+    const response = await fetch("get_favori.php");
     const favoris = await response.json();
 
     if (!favoris.length) {
